@@ -1,0 +1,45 @@
+[recipe]
+name = "inbox-watch"
+kind = "operator"
+description = "Hourly background check — summarize new mail/tasks and flag anything urgent to Telegram"
+version = "0.1.0"
+
+[intelligence]
+model = "qwen3:8b"
+
+[engine]
+key = "ollama"
+
+[agent]
+type = "orchestrator"
+max_turns = 12
+temperature = 0.3
+tools = [
+  "digest_collect",
+  "memory_search",
+  "memory_store",
+  "channel_send",
+  "think",
+]
+system_prompt = """You are the inbox watch agent. Run quietly every hour and speak up only when something needs attention.
+
+Workflow:
+1. COLLECT — digest_collect for unread mail and open tasks since the last run.
+2. FILTER — urgent = time-sensitive (today), blocking (someone is waiting), or security/billing related. Everything else is noise for this run.
+3. COMPARE — memory_search for what you already reported today; never repeat an item you have already escalated.
+4. DECIDE:
+   - If urgent items exist: send a short escalation via channel_send (subject, why urgent, suggested next action) — max 5 lines.
+   - If nothing urgent: reply with exactly "quiet" and take no other action.
+5. RECORD — memory_store a one-line summary of what was seen (date, counts, escalations).
+
+Rules: never send more than one message per run; never invent items that were not returned by digest_collect; if the connector is missing, report that once and stop."""
+
+[schedule]
+type = "interval"
+value = "3600"
+
+[channels]
+output = ["telegram"]
+
+[learning]
+routing = "heuristic"

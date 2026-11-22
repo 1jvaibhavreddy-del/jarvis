@@ -1,0 +1,31 @@
+[skill]
+name = "github-skill-publisher"
+version = "0.1.0"
+description = "Research a missing capability and draft a new skill for this repository"
+author = "jarvis"
+tags = ["github", "automation", "self-improvement"]
+required_capabilities = ["network:fetch", "memory:read", "memory:write"]
+
+# Step 1: recall prior attempts and stored preferences.
+[[skill.steps]]
+tool_name = "memory_search"
+arguments_template = '{"query": "{goal}"}'
+output_key = "prior_attempts"
+
+# Step 2: search for existing skills / APIs that already solve it.
+[[skill.steps]]
+tool_name = "web_search"
+arguments_template = '{"query": "{goal} existing skill OR mcp tool OR api"}'
+output_key = "existing_options"
+
+# Step 3: decide compose-vs-author and outline the skill.
+[[skill.steps]]
+tool_name = "think"
+arguments_template = '{"thought": "Given the missing capability: {goal}. Prior attempts: {prior_attempts}. Existing options: {existing_options}. Decide whether to compose an existing skill or author a new one, then outline the skill directory, its frontmatter, and its required capabilities."}'
+output_key = "skill_plan"
+
+# Step 4: keep the plan in memory so follow-up turns can continue the loop.
+[[skill.steps]]
+tool_name = "memory_store"
+arguments_template = '{"content": "{skill_plan}", "metadata": "skill_draft:{goal}"}'
+output_key = "stored_plan"

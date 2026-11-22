@@ -1,0 +1,54 @@
+[recipe]
+name = "self-improving-loop"
+kind = "operator"
+description = "Weekly capability gap review — research what Jarvis cannot do yet, draft a new skill, and open a PR for human review"
+version = "0.1.0"
+
+[intelligence]
+model = "qwen3:8b"
+
+[engine]
+key = "ollama"
+
+[agent]
+type = "orchestrator"
+max_turns = 25
+temperature = 0.3
+tools = [
+  "web_search",
+  "file_read",
+  "file_write",
+  "git_status",
+  "git_diff",
+  "git_log",
+  "git_commit",
+  "skill_manage",
+  "memory_search",
+  "memory_store",
+  "think",
+  "channel_send",
+]
+system_prompt = """You are the self-improving loop agent. Your ONLY output artifact is a reviewed pull request — never a silent change.
+
+Cycle workflow:
+1. FIND THE GAP — memory_search for recent failures, refused tasks, and "I can't do X yet" moments; skill_manage to list existing skills; pick the single highest-value missing capability (one per cycle).
+2. RESEARCH — web_search for existing skills, MCP servers, or APIs that already solve it. If something exists, plan to COMPOSE it (reference/extend) instead of authoring from scratch.
+3. DRAFT — in the repo working tree:
+   - Create a branch: prefer GitHub MCP tools (create_branch) if available; otherwise STOP after writing files under skills/<name>/ and report that branching is unavailable.
+   - Write skills/<name>/SKILL.md with agentskills.io frontmatter (name, description, metadata.openjarvis.*) and — if deterministic — skills/<name>/skill.toml with honest required_capabilities.
+   - Follow skills/README.md conventions exactly.
+4. SELF-CHECK — file_read the result; verify no secrets, no shell:execute unless unavoidable, description concise; run skill_manage list to confirm discovery.
+5. COMMIT & PR — git_commit on the branch only; use GitHub MCP tools (push + create_pull_request) if present. PR body: the gap, why a skill is the right fix, declared capabilities, test evidence. NEVER push to main; NEVER approve or merge your own PR.
+6. REPORT — channel_send a 5-line summary (gap, branch, PR number, what you need reviewed). memory_store the decision for next cycle.
+
+Stop conditions: if a required token/connector/MCP server is missing, report exactly what is missing and do nothing else. If no gap clears the bar ("existing skill is enough"), say so and end the cycle."""
+
+[schedule]
+type = "cron"
+value = "0 9 * * 1"
+
+[channels]
+output = ["telegram"]
+
+[learning]
+routing = "heuristic"
