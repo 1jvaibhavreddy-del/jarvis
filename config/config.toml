@@ -1,0 +1,175 @@
+# ═══════════════════════════════════════════════════════════════════
+# OpenJarvis configuration — local-first, offline-capable Jarvis
+# Template for ~/.openjarvis/config.toml   (full walkthrough: SETUP.md)
+#
+#   Install : scripts/bootstrap.sh            (or: cp config/config.toml ~/.openjarvis/)
+#   Validate: jarvis config show -p ~/.openjarvis/config.toml toml
+# ═══════════════════════════════════════════════════════════════════
+
+# ── Pillar 2 (partial): Agent — the reasoning loop ────────────────
+# MCP tools are only exposed to tool-capable agents such as
+# "orchestrator" or "native_react" — never to the default "simple".
+[agent]
+default_agent = "orchestrator"
+max_turns = 12
+# tools = ""                        # leave UNSET to load every tool, including
+#                                     MCP tools — a list here also FILTERS MCP
+#                                     tools, so add their names if you scope this
+#                                     (one-off scoping: ask --tools calculator,think)
+context_from_memory = true          # inject retrieved memory context every turn
+
+# ── Pillar 1: Intelligence — the model ────────────────────────────
+# Stays strictly offline while no cloud API keys are exported.
+# Optional online boost: export OPENROUTER_API_KEY / ANTHROPIC_API_KEY /
+# OPENAI_API_KEY / GOOGLE_API_KEY — otherwise leave them unset.
+[intelligence]
+default_model = "qwen3:8b"          # pick per RAM/VRAM: qwen3.5:4b | qwen3:8b | qwen3.5:9b
+preferred_engine = "ollama"
+provider = "local"
+temperature = 0.7
+max_tokens = 1024
+
+# ── Pillar 5 (partial): Engine — the inference runtime ────────────
+[engine]
+default = "ollama"
+
+[engine.ollama]
+host = "http://localhost:11434"
+
+# [engine.vllm]
+# host = "http://localhost:8000"
+
+# [engine.llamacpp]
+# host = "http://localhost:8080"
+
+# ── Persistent local memory (Step 3) ──────────────────────────────
+# Document memory: SQLite store behind `jarvis memory index ./docs/`.
+# NOTE: [memory] is an alias that maps onto [tools.storage] — the two
+# blocks below share one object, so keep their key names distinct.
+[tools.storage]
+default_backend = "sqlite"
+# db_path = ""                       # defaults to ~/.openjarvis/memory.db
+#                                     # (override only with an absolute path —
+#                                     #  "~" is NOT expanded for db paths)
+context_top_k = 5
+context_min_score = 0.1
+context_max_tokens = 2048
+chunk_size = 512
+chunk_overlap = 64
+
+# Automatic fact extraction from conversations (background service).
+[memory]
+enabled = true
+backend = "local"                   # on-disk JSONL fact store
+max_facts = 1000
+
+# ── External MCP servers (Step 5A) ────────────────────────────────
+# "servers" accepts a JSON file path (resolved relative to
+# ~/.openjarvis/) or inline JSON. Token-bearing servers are better
+# created with:  jarvis add github --key "$GITHUB_TOKEN"
+[tools.mcp]
+enabled = true
+servers = "mcp-servers.json"
+
+# ── Skills: auto-discovery + auto-sync from GitHub (Step 4) ───────
+[skills]
+enabled = true
+skills_dir = "~/.openjarvis/skills/"
+active = "*"                        # activate every installed skill
+auto_discover = true                # scan skills_dir on startup
+auto_sync = true                    # pull sources on each session start
+max_depth = 5                       # sub-skill nesting limit
+sandbox_dangerous = true            # warn when a skill requests shell:execute,
+                                    # network:listen, or filesystem:write
+
+# Your own self-automation skill repo (this repository — skills/ at repo root).
+[[skills.sources]]
+source = "github"
+url = "https://github.com/1jvaibhavreddy-del/jarvis"
+auto_update = true
+
+# Hermes Agent registry — full catalog (186 skills).
+[[skills.sources]]
+source = "hermes"
+auto_update = true
+
+# OpenClaw's official skills. NOTE: 1.0.4 hardcodes
+# https://github.com/openclaw/skills (404s) for source = "openclaw",
+# so the working repo is pulled through the generic github source instead.
+[[skills.sources]]
+source = "github"
+url = "https://github.com/openclaw/agent-skills"
+auto_update = true
+
+# ── 24/7 automation (Step 7) ──────────────────────────────────────
+# Full five-field cron needs `croniter` (uv pip install croniter).
+# The agent for each task is chosen at creation time:
+#   jarvis scheduler create "…" --type cron --value "0 8 * * *" --agent orchestrator
+[scheduler]
+enabled = true
+poll_interval = 60                  # seconds between due-task checks
+db_path = ""                        # defaults to ~/.openjarvis/scheduler.db
+#                                     (use an absolute path to override)
+
+# ── Messaging channels (Step 5C) ──────────────────────────────────
+[channel]
+enabled = false                     # flip to true after setting the bot token
+default_channel = "telegram"
+default_agent = "orchestrator"
+
+[channel.telegram]
+bot_token = ""                      # or export TELEGRAM_BOT_TOKEN (preferred)
+
+# ── Morning digest + offline voice (Steps 6–7) ────────────────────
+[digest]
+enabled = false                     # flip to true once connectors are linked
+schedule = "0 8 * * *"
+timezone = "Asia/Kolkata"
+persona = "jarvis"
+honorific = "sir"
+sections = ["messages", "calendar", "health", "world"]
+tts_backend = "kokoro"              # local TTS (avoid cloud defaults)
+voice_id = "bm_george"
+voice_speed = 1.0
+
+# Local speech subsystem: faster-whisper STT + kokoro TTS.
+# Plug-and-play alternative: Speaches container on port 8001 (SETUP.md Step 6).
+[speech]
+backend = "faster-whisper"
+model = "base"
+language = ""                       # empty = auto-detect
+device = "auto"
+compute_type = "int8"               # friendly for CPU-only machines
+tts_backend = "kokoro"
+voice_id = "bm_george"
+voice_speed = 1.0
+
+# ── OpenAI-compatible API server (Step 7) ─────────────────────────
+# Loopback by default; set an API key before binding to 0.0.0.0.
+[server]
+host = "127.0.0.1"
+port = 8000
+agent = "orchestrator"
+
+# ── Learning, telemetry, traces, security ─────────────────────────
+[learning]
+enabled = false                     # opt in once you have trace history
+
+[learning.routing]
+policy = "heuristic"
+
+[telemetry]
+enabled = true                      # energy / latency / cost tracking
+
+[traces]
+enabled = true                      # record traces for the debug UI
+
+[security]
+enabled = true
+mode = "warn"
+scan_input = true
+scan_output = true
+secret_scanner = true
+pii_scanner = true
+enforce_tool_confirmation = true
+ssrf_protection = true
