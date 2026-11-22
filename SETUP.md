@@ -243,25 +243,30 @@ auto_sync = true
 max_depth = 5
 sandbox_dangerous = true        # warn on shell:execute / network:listen / filesystem:write
 
-[[skills.sources]]              # your own self-automation repo
+[[skills.sources]]              # your own self-automation repo (this repo, main branch)
 source = "github"
-url = "https://github.com/YOUR_USERNAME/my-jarvis-skills"
+url = "https://github.com/1jvaibhavreddy-del/jarvis"
 auto_update = true
 
-[[skills.sources]]              # community registries (filtered)
+[[skills.sources]]              # Hermes Agent registry (186 skills, 26 categories)
 source = "hermes"
-filter = { category = ["research", "coding", "productivity"] }
 auto_update = true
 
-[[skills.sources]]
-source = "openclaw"
-filter = { search = "automation|productivity" }
+[[skills.sources]]              # OpenClaw official skills (via generic github source)
+source = "github"
+url = "https://github.com/openclaw/agent-skills"
 auto_update = true
 ```
 
-**Edit `YOUR_USERNAME`** to your fork/clone URL. Keep
-`sandbox_dangerous = true` — it forces a warning whenever any external skill
-requests high-risk capabilities.
+**Proven result (`jarvis skill sync`):** 56 skills installed total —
+44 from **hermes** (creative 40, mlops 23, productivity 19, software-development
+18, research 16, finance 9, security 6, …), 9 from **openclaw/agent-skills**
+(autoreview, beam, handoff, crabbox, …), plus this repo's own 3.
+
+**Note:** OpenJarvis 1.0.4's built-in `openclaw` source hardcodes
+`github.com/openclaw/skills` (404 — repo was renamed), so it is wired through
+the generic `github` source instead. Keep `sandbox_dangerous = true` — it
+forces a warning whenever any external skill requests high-risk capabilities.
 
 ### C. Skill workflow
 
