@@ -254,6 +254,9 @@ Run these on your machine, in order. Every step has a verification command.
 # 1. Engine + models
 curl -fsSL https://open-jarvis.github.io/OpenJarvis/install.sh | bash
 jarvis --version && jarvis init && ollama pull qwen3:8b
+# The installer includes the server extra; if you installed via pip instead:
+#   pip install "openjarvis[server]"      # required for `jarvis serve`
+```
 
 # 2. This repo onto the machine
 git clone https://github.com/1jvaibhavreddy-del/jarvis.git
