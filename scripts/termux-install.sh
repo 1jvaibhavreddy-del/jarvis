@@ -40,7 +40,9 @@ die()  { printf "\033[1;31m[error]\033[0m %s\n" "$*" >&2; exit 1; }
 if [ "$is_termux" -eq 1 ]; then
   say "Termux detected — installing packages"
   pkg update -y >/dev/null 2>&1
-  pkg install -y python git curl clang >/dev/null 2>&1
+  pkg install -y python git curl clang termux-tools >/dev/null 2>&1
+  # Keep the engine alive when the screen turns off.
+  termux-wake-lock 2>/dev/null || true
   # llama.cpp server (provides the OpenAI-compatible API)
   if pkg list-installed 2>/dev/null | grep -q "^llama.cpp"; then
     say "llama.cpp already installed"
